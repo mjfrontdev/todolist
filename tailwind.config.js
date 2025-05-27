@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  darkMode: "class",
   theme: {
     extend: {
       fontFamily: {
@@ -12,13 +11,6 @@ module.exports = {
         dark: {
           DEFAULT: "#121212",
           lighter: "#1e1e1e",
-        },
-        light: {
-          DEFAULT: "#f5f7fa",
-          card: "#ffffff",
-          border: "#e0e7ef",
-          text: "#232b36",
-          input: "#f1f5f9",
         },
       },
       animation: {

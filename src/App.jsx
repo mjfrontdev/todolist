@@ -1,27 +1,16 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import FloatingInput from "./components/FloatingInput";
-import PushButton from "./components/PushButton";
+import AddTaskButton from "./components/AddTaskButton";
 import TaskCard from "./components/TaskCard";
+import ThemeToggleButton from "./components/ThemeToggleButton";
+import { useTheme } from "./ThemeContext";
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
   const [search, setSearch] = useState("");
   const [showOnlyLiked, setShowOnlyLiked] = useState(false);
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("theme") || "dark"
-  );
-
-  useEffect(() => {
-    if (theme === "light") {
-      document.body.classList.add("light");
-      document.body.classList.remove("dark");
-    } else {
-      document.body.classList.remove("light");
-      document.body.classList.add("dark");
-    }
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const { theme } = useTheme();
 
   const handleAddTask = () => {
     if (newTask.title && newTask.description) {
@@ -57,31 +46,44 @@ function App() {
   });
 
   return (
-    <div className="min-h-screen bg-dark text-white transition-colors duration-500">
-      <header className="bg-dark-lighter py-6 shadow-lg flex flex-col md:flex-row items-center justify-between max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold text-center text-primary flex-1">
-          <i className="fas fa-tasks ml-2"></i>
-          مدیریت تسک‌ها
-        </h1>
-        <button
-          className="ml-0 md:ml-4 mt-4 md:mt-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-b from-primary to-blue-700 shadow hover:shadow-lg transition-all duration-300"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          aria-label="تغییر تم"
-        >
-          {theme === "dark" ? (
-            <i className="fas fa-sun text-yellow-400"></i>
-          ) : (
-            <i className="fas fa-moon text-gray-700"></i>
-          )}
-          <span className="hidden md:inline text-sm font-bold">
-            {theme === "dark" ? "تم روشن" : "تم تیره"}
-          </span>
-        </button>
+    <div
+      className={
+        theme === "dark"
+          ? "min-h-screen bg-dark text-white"
+          : "min-h-screen bg-white text-black"
+      }
+    >
+      <header
+        className={
+          theme === "dark"
+            ? "bg-dark-lighter py-6 shadow-lg"
+            : "bg-blue-100 py-6 shadow-lg"
+        }
+      >
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
+          <h1
+            className={
+              theme === "dark"
+                ? "text-3xl font-bold text-center text-primary"
+                : "text-3xl font-bold text-center text-blue-600"
+            }
+          >
+            <i className="fas fa-tasks ml-2"></i>
+            مدیریت تسک‌ها
+          </h1>
+          <ThemeToggleButton />
+        </div>
       </header>
 
       <main className="p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-lg mb-8 light:from-white light:to-light-card">
+          <div
+            className={
+              theme === "dark"
+                ? "bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-lg mb-8"
+                : "bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg mb-8 border border-blue-200"
+            }
+          >
             <div className="flex p-2 gap-1 mb-4">
               <div className="circle">
                 <span className="bg-blue-500 inline-block w-3 h-3 rounded-full"></span>
@@ -94,42 +96,54 @@ function App() {
               </div>
             </div>
             {/* بخش جست‌وجو و فیلتر */}
-            <div className="flex flex-col md:flex-row gap-2 items-center mb-6">
-              <div className="w-full md:w-80">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="جست‌وجوی تسک..."
-                    className="search-input"
-                    name="search"
-                  />
-                  <svg
-                    className="search-svg"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    ></path>
-                  </svg>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-2 items-center mb-6 justify-between sm:justify-start">
+              <div className="relative w-full sm:w-auto flex-1">
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="جست‌وجوی تسک..."
+                  className={
+                    theme === "dark"
+                      ? "search-input shadow-lg focus:border-2 border-gray-300 px-6 py-3 rounded-2xl w-full sm:w-72 transition-all focus:w-full outline-none bg-gray-800/80 text-white placeholder-gray-300 font-bold text-lg pr-12 text-right"
+                      : "search-input shadow-lg focus:border-2 border-blue-300 px-6 py-3 rounded-2xl w-full sm:w-72 transition-all focus:w-full outline-none bg-white text-black placeholder-gray-400 font-bold text-lg pr-12 text-right border border-blue-200"
+                  }
+                  name="search"
+                  dir="rtl"
+                />
+                <svg
+                  className={
+                    theme === "dark"
+                      ? "search-svg w-7 h-7 absolute top-1/2 left-3 -translate-y-1/2 text-primary pointer-events-none"
+                      : "search-svg w-7 h-7 absolute top-1/2 left-3 -translate-y-1/2 text-blue-400 pointer-events-none"
+                  }
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  ></path>
+                </svg>
               </div>
               <button
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-b from-primary to-blue-700 shadow hover:shadow-lg transition-all duration-300 ${
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-b from-primary to-blue-700 shadow hover:shadow-lg transition-all duration-300 font-bold text-base h-[52px] sm:h-auto ${
                   showOnlyLiked ? "ring-2 ring-primary" : ""
                 }`}
                 onClick={() => setShowOnlyLiked((v) => !v)}
+                style={{ marginRight: 0 }}
               >
                 <i
                   className={`fas fa-heart${
-                    showOnlyLiked ? " text-red-500" : " text-white"
+                    showOnlyLiked
+                      ? " text-red-500"
+                      : theme === "dark"
+                      ? " text-white"
+                      : " text-blue-600"
                   }`}
                 ></i>
                 فقط علاقه‌مندی‌ها
@@ -156,14 +170,10 @@ function App() {
                   icon="fas fa-align-left"
                 />
               </div>
-              <div className="mt-6">
-                <PushButton
-                  onClick={handleAddTask}
-                  className="hover:scale-105 transition-transform duration-300"
-                >
-                  <i className="fas fa-plus ml-2"></i>
+              <div className="mt-6 flex justify-end">
+                <AddTaskButton onClick={handleAddTask}>
                   افزودن تسک
-                </PushButton>
+                </AddTaskButton>
               </div>
             </div>
           </div>
@@ -193,11 +203,25 @@ function App() {
         </div>
       </main>
 
-      <footer className="bg-dark-lighter py-4 mt-8 light:bg-light-card">
-        <div className="max-w-4xl mx-auto px-4 text-center text-gray-500 text-sm light:text-light-text">
+      <footer
+        className={
+          theme === "dark"
+            ? "bg-dark-lighter py-4 mt-8"
+            : "bg-blue-100 py-4 mt-8"
+        }
+      >
+        <div className="max-w-4xl mx-auto px-4 text-center text-gray-500 text-sm">
           <p className="animate-text">
             ساخته شده توسط{" "}
-            <span className="text-primary font-semibold">mohamad majidian</span>
+            <span
+              className={
+                theme === "dark"
+                  ? "text-primary font-semibold"
+                  : "text-blue-600 font-semibold"
+              }
+            >
+              mohamad majidian
+            </span>
           </p>
         </div>
       </footer>
