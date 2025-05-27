@@ -55,8 +55,6 @@
 ## 👤 توسعه‌دهنده
 
 ساخته شده با ❤️ توسط **mohamad majidian**
-![image](https://github.com/user-attachments/assets/a188118b-5b87-43ce-bd01-c32235b0a89f)
-![image](https://github.com/user-attachments/assets/d3ab11dc-a303-4dd5-9201-c4be392bb75e)
 
 ---
 
