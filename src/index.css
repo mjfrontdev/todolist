@@ -2,6 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+    min-height: 100vh;
+    /* پس‌زمینه خفن با گرادینت و افکت بلور */
+    background: linear-gradient(135deg, #1e293b 0%, #0ea5e9 100%, #232526 100%);
+    background-attachment: fixed;
+    /* اگر خواستی می‌تونی از عکس هم استفاده کنی */
+    /* background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1500&q=80'); */
+}
+
+[data-theme='light'] body {
+    background: linear-gradient(135deg, #e0e7ef 0%, #f8fafc 100%);
+}
+
+.glass-box {
+    background: rgba(30, 41, 59, 0.35);
+    /* شفافیت */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: 24px;
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
+}
+
+.glass-card {
+    background: rgba(14, 165, 233, 0.18);
+    box-shadow: 0 4px 24px 0 rgba(14, 165, 233, 0.10);
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    border-radius: 20px;
+    border: 1.2px solid rgba(255, 255, 255, 0.13);
+}
+
+/* برای تم روشن هم شیشه‌ای */
+[data-theme='light'] .glass-box,
+[data-theme='light'] .glass-card {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1.5px solid rgba(30, 41, 59, 0.10);
+    color: #222;
+    box-shadow: 0 8px 32px 0 rgba(14, 165, 233, 0.08);
+}
+
+[data-theme='light'] .glass-card {
+    background: rgba(224, 242, 254, 0.7);
+    border: 1.2px solid #bae6fd;
+}
+
 @layer base {
     body {
         @apply bg-dark text-white;
@@ -142,4 +188,126 @@
     .circle:hover span {
         @apply scale-125;
     }
+}
+
+@layer utilities {
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+
+    .animate-slide-in {
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .animate-text {
+        animation: textGradient 3s ease infinite;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes textGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.search-input {
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    transform: translateY(-2px);
+}
+
+.circle {
+    transition: all 0.3s ease;
+}
+
+.circle:hover {
+    transform: scale(1.2);
+}
+
+/* استایل‌های اضافی برای بهبود ظاهر */
+.task-card {
+    transition: all 0.3s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* استایل برای دکمه‌ها */
+button {
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+/* استایل برای ورودی‌ها */
+input,
+textarea {
+    transition: all 0.3s ease;
+}
+
+input:focus,
+textarea:focus {
+    transform: translateY(-1px);
+}
+
+/* استایل برای هدر */
+header {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* استایل برای فوتر */
+footer {
+    position: relative;
+    overflow: hidden;
+}
+
+footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
 }

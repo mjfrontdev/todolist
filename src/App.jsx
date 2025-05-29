@@ -4,6 +4,7 @@ import AddTaskButton from "./components/AddTaskButton";
 import TaskCard from "./components/TaskCard";
 import ThemeToggleButton from "./components/ThemeToggleButton";
 import { useTheme } from "./ThemeContext";
+import toast, { Toaster } from "react-hot-toast";
 
 function App() {
   const [tasks, setTasks] = useState([]);
@@ -13,9 +14,34 @@ function App() {
   const { theme } = useTheme();
 
   const handleAddTask = () => {
-    if (newTask.title && newTask.description) {
-      setTasks([...tasks, { ...newTask, id: Date.now(), isLiked: false }]);
+    if (newTask.title.trim() && newTask.description.trim()) {
+      const task = {
+        ...newTask,
+        id: Date.now(),
+        isLiked: false,
+        createdAt: new Date().toLocaleString("fa-IR"),
+      };
+      setTasks([...tasks, task]);
       setNewTask({ title: "", description: "" });
+      toast.success("تسک با موفقیت اضافه شد!", {
+        duration: 3000,
+        position: "top-center",
+        style: {
+          background: theme === "dark" ? "#1a1a1a" : "#fff",
+          color: theme === "dark" ? "#fff" : "#000",
+          border: "1px solid #3b82f6",
+        },
+      });
+    } else {
+      toast.error("لطفا عنوان و توضیحات را وارد کنید!", {
+        duration: 3000,
+        position: "top-center",
+        style: {
+          background: theme === "dark" ? "#1a1a1a" : "#fff",
+          color: theme === "dark" ? "#fff" : "#000",
+          border: "1px solid #ef4444",
+        },
+      });
     }
   };
 
@@ -28,7 +54,17 @@ function App() {
   };
 
   const handleDelete = (taskId) => {
+    const taskToDelete = tasks.find((task) => task.id === taskId);
     setTasks(tasks.filter((task) => task.id !== taskId));
+    toast.success(`تسک "${taskToDelete.title}" با موفقیت حذف شد!`, {
+      duration: 3000,
+      position: "top-center",
+      style: {
+        background: theme === "dark" ? "#1a1a1a" : "#fff",
+        color: theme === "dark" ? "#fff" : "#000",
+        border: "1px solid #3b82f6",
+      },
+    });
   };
 
   const handleEdit = (taskId) => {
@@ -53,6 +89,7 @@ function App() {
           : "min-h-screen bg-white text-black"
       }
     >
+      <Toaster />
       <header
         className={
           theme === "dark"
@@ -77,13 +114,7 @@ function App() {
 
       <main className="p-8">
         <div className="max-w-4xl mx-auto">
-          <div
-            className={
-              theme === "dark"
-                ? "bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-lg mb-8"
-                : "bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-xl shadow-lg mb-8 border border-blue-200"
-            }
-          >
+          <div className={`glass-box p-6 mb-8 max-w-4xl mx-auto shadow-lg`}>
             <div className="flex p-2 gap-1 mb-4">
               <div className="circle">
                 <span className="bg-blue-500 inline-block w-3 h-3 rounded-full"></span>
@@ -180,7 +211,11 @@ function App() {
 
           <div className="space-y-4">
             {filteredTasks.length === 0 ? (
-              <div className="text-center py-12">
+              <div
+                className={`text-center py-12 rounded-xl ${
+                  theme === "dark" ? "bg-dark-lighter" : "bg-gray-50"
+                } animate-fade-in`}
+              >
                 <i className="fas fa-clipboard-list text-6xl text-gray-600 mb-4"></i>
                 <p className="text-gray-400 text-xl">
                   هیچ تسکی مطابق جست‌وجوی شما پیدا نشد 😴
