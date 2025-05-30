@@ -1,17 +1,42 @@
 import React, { useState } from "react";
 import FloatingInput from "./components/FloatingInput";
-import AddTaskButton from "./components/AddTaskButton";
-import TaskCard from "./components/TaskCard";
-import ThemeToggleButton from "./components/ThemeToggleButton";
-import { useTheme } from "./ThemeContext";
+import { AnimatePresence, motion } from "framer-motion";
 import toast, { Toaster } from "react-hot-toast";
+
+const LABELS = [
+  { name: "کار", color: "#6366f1" },
+  { name: "مالی", color: "#fde047" },
+  { name: "اجتماعی", color: "#f472b6" },
+  { name: "شخصی", color: "#5eead4" },
+];
+
+const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
   const [search, setSearch] = useState("");
-  const [showOnlyLiked, setShowOnlyLiked] = useState(false);
-  const { theme } = useTheme();
+  const [isDarkMode, setIsDarkMode] = useState(true);
+  const today = new Date();
+  const todayStr = today.toLocaleDateString("fa-IR", {
+    weekday: "long",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+  const [showForm, setShowForm] = useState(false);
+  const [removingId, setRemovingId] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const demoBtnClass = `rounded-2xl w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-md border border-gray-300/30 transition-all duration-200
+    ${
+      isDarkMode
+        ? "bg-white/10 hover:bg-indigo-400/20"
+        : "bg-white/80 hover:bg-indigo-100/80"
+    }`;
+  const demoIconClass = `${
+    isDarkMode ? "text-indigo-200" : "text-indigo-500"
+  } text-xl`;
 
   const handleAddTask = () => {
     if (newTask.title.trim() && newTask.description.trim()) {
@@ -19,30 +44,24 @@ function App() {
         ...newTask,
         id: Date.now(),
         isLiked: false,
-        createdAt: new Date().toLocaleString("fa-IR"),
+        label: LABELS[Math.floor(Math.random() * LABELS.length)],
       };
-      setTasks([...tasks, task]);
+      setTasks([task, ...tasks]);
       setNewTask({ title: "", description: "" });
-      toast.success("تسک با موفقیت اضافه شد!", {
-        duration: 3000,
-        position: "top-center",
-        style: {
-          background: theme === "dark" ? "#1a1a1a" : "#fff",
-          color: theme === "dark" ? "#fff" : "#000",
-          border: "1px solid #3b82f6",
-        },
-      });
+      setShowForm(false);
+      toast.success("تسک با موفقیت اضافه شد!", { duration: 2500 });
     } else {
-      toast.error("لطفا عنوان و توضیحات را وارد کنید!", {
-        duration: 3000,
-        position: "top-center",
-        style: {
-          background: theme === "dark" ? "#1a1a1a" : "#fff",
-          color: theme === "dark" ? "#fff" : "#000",
-          border: "1px solid #ef4444",
-        },
-      });
+      toast.error("لطفا عنوان و توضیحات را وارد کنید!", { duration: 2500 });
     }
+  };
+
+  const handleDelete = (taskId) => {
+    setRemovingId(taskId);
+    setTimeout(() => {
+      setTasks(tasks.filter((task) => task.id !== taskId));
+      setRemovingId(null);
+      toast.success("تسک با موفقیت حذف شد!", { duration: 2000 });
+    }, 350);
   };
 
   const handleLike = (taskId) => {
@@ -51,136 +70,410 @@ function App() {
         task.id === taskId ? { ...task, isLiked: !task.isLiked } : task
       )
     );
+    toast.success("وضعیت علاقه‌مندی تغییر کرد!", { duration: 2000 });
   };
 
-  const handleDelete = (taskId) => {
-    const taskToDelete = tasks.find((task) => task.id === taskId);
-    setTasks(tasks.filter((task) => task.id !== taskId));
-    toast.success(`تسک "${taskToDelete.title}" با موفقیت حذف شد!`, {
-      duration: 3000,
-      position: "top-center",
-      style: {
-        background: theme === "dark" ? "#1a1a1a" : "#fff",
-        color: theme === "dark" ? "#fff" : "#000",
-        border: "1px solid #3b82f6",
-      },
-    });
-  };
-
-  const handleEdit = (taskId) => {
-    // TODO: Implement edit functionality
-    console.log("Edit task:", taskId);
-  };
-
-  // فیلتر تسک‌ها بر اساس جست‌وجو و فیلتر لایک‌شده‌ها
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(search.toLowerCase()) ||
       task.description.toLowerCase().includes(search.toLowerCase());
-    const matchesLiked = showOnlyLiked ? task.isLiked : true;
-    return matchesSearch && matchesLiked;
+    return matchesSearch;
   });
 
   return (
     <div
-      className={
-        theme === "dark"
-          ? "min-h-screen bg-dark text-white"
-          : "min-h-screen bg-white text-black"
-      }
+      className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-300 ${
+        isDarkMode ? "bg-gray-900" : "bg-[#f3f4f6]"
+      }`}
+      style={{ minHeight: "100dvh" }}
     >
-      <Toaster />
-      <header
-        className={
-          theme === "dark"
-            ? "bg-dark-lighter py-6 shadow-lg"
-            : "bg-blue-100 py-6 shadow-lg"
-        }
-      >
-        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
-          <h1
-            className={
-              theme === "dark"
-                ? "text-3xl font-bold text-center text-primary"
-                : "text-3xl font-bold text-center text-blue-600"
-            }
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className={`fixed top-0 left-0 h-full w-64 z-50 shadow-2xl backdrop-blur-xl flex flex-col p-6 gap-4 transition-colors duration-300 ${
+              isDarkMode
+                ? "bg-gray-800/95 text-white"
+                : "bg-white/95 text-gray-700"
+            }`}
+            style={{ borderTopRightRadius: 32, borderBottomRightRadius: 32 }}
           >
-            <i className="fas fa-tasks ml-2"></i>
-            مدیریت تسک‌ها
-          </h1>
-          <ThemeToggleButton />
-        </div>
-      </header>
-
-      <main className="p-8">
-        <div className="max-w-4xl mx-auto">
-          <div className={`glass-box p-6 mb-8 max-w-4xl mx-auto shadow-lg`}>
-            <div className="flex p-2 gap-1 mb-4">
-              <div className="circle">
-                <span className="bg-blue-500 inline-block w-3 h-3 rounded-full"></span>
-              </div>
-              <div className="circle">
-                <span className="bg-purple-500 inline-block w-3 h-3 rounded-full"></span>
-              </div>
-              <div className="circle">
-                <span className="bg-pink-500 inline-block w-3 h-3 rounded-full"></span>
-              </div>
-            </div>
-            {/* بخش جست‌وجو و فیلتر */}
-            <div className="flex flex-col sm:flex-row gap-2 items-center mb-6 justify-between sm:justify-start">
-              <div className="relative w-full sm:w-auto flex-1">
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="جست‌وجوی تسک..."
-                  className={
-                    theme === "dark"
-                      ? "search-input shadow-lg focus:border-2 border-gray-300 px-6 py-3 rounded-2xl w-full sm:w-72 transition-all focus:w-full outline-none bg-gray-800/80 text-white placeholder-gray-300 font-bold text-lg pr-12 text-right"
-                      : "search-input shadow-lg focus:border-2 border-blue-300 px-6 py-3 rounded-2xl w-full sm:w-72 transition-all focus:w-full outline-none bg-white text-black placeholder-gray-400 font-bold text-lg pr-12 text-right border border-blue-200"
-                  }
-                  name="search"
-                  dir="rtl"
-                />
-                <svg
-                  className={
-                    theme === "dark"
-                      ? "search-svg w-7 h-7 absolute top-1/2 left-3 -translate-y-1/2 text-primary pointer-events-none"
-                      : "search-svg w-7 h-7 absolute top-1/2 left-3 -translate-y-1/2 text-blue-400 pointer-events-none"
-                  }
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  ></path>
-                </svg>
-              </div>
+            <div className="flex items-center justify-between mb-6">
+              <div className="font-bold text-lg">منو</div>
               <button
-                className={`flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-b from-primary to-blue-700 shadow hover:shadow-lg transition-all duration-300 font-bold text-base h-[52px] sm:h-auto ${
-                  showOnlyLiked ? "ring-2 ring-primary" : ""
+                onClick={() => setIsSidebarOpen(false)}
+                className={`text-2xl transition-colors ${
+                  isDarkMode
+                    ? "text-gray-400 hover:text-red-400"
+                    : "text-gray-400 hover:text-red-400"
                 }`}
-                onClick={() => setShowOnlyLiked((v) => !v)}
-                style={{ marginRight: 0 }}
               >
-                <i
-                  className={`fas fa-heart${
-                    showOnlyLiked
-                      ? " text-red-500"
-                      : theme === "dark"
-                      ? " text-white"
-                      : " text-blue-600"
-                  }`}
-                ></i>
-                فقط علاقه‌مندی‌ها
+                <i className="fas fa-times"></i>
               </button>
             </div>
-            <div className="card__content">
+            <ul className="flex flex-col gap-4">
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-user-circle text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                پروفایل کاربر
+              </li>
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-layer-group text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                دسته‌بندی تسک‌ها
+              </li>
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-check-double text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                تسک‌های تکمیل‌شده
+              </li>
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-cog text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                تنظیمات
+              </li>
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-info-circle text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                درباره ما
+              </li>
+              <li
+                className={`flex items-center gap-3 cursor-not-allowed opacity-60 ${
+                  isDarkMode ? "text-white" : "text-gray-700"
+                }`}
+              >
+                <i
+                  className={`fas fa-sign-out-alt text-xl ${
+                    isDarkMode ? "text-white" : "text-gray-600"
+                  }`}
+                ></i>
+                خروج
+              </li>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="absolute -z-10 w-full h-full overflow-hidden">
+        <div className="absolute w-96 h-96 bg-[#a5b4fc] rounded-full blur-3xl opacity-60 -top-32 -left-32"></div>
+        <div className="absolute w-96 h-96 bg-[#f472b6] rounded-full blur-3xl opacity-60 -top-24 -right-32"></div>
+        <div className="absolute w-96 h-96 bg-[#fef08a] rounded-full blur-3xl opacity-50 -bottom-32 -left-24"></div>
+        <div className="absolute w-96 h-96 bg-[#5eead4] rounded-full blur-3xl opacity-50 -bottom-24 -right-24"></div>
+      </div>
+      <Toaster />
+      <div
+        className={`w-full max-w-md backdrop-blur-xl shadow-2xl rounded-[2.5rem] px-0 pt-6 pb-4 flex flex-col relative transition-colors duration-300 ${
+          isDarkMode ? "bg-gray-800/80 text-white" : "bg-white/90 text-gray-700"
+        }`}
+        style={{ minHeight: 600 }}
+      >
+        <div className="flex items-center justify-between px-6">
+          <button
+            className={`text-2xl ${
+              isDarkMode ? "text-gray-300" : "text-gray-400"
+            }`}
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <i className="fas fa-bars"></i>
+          </button>
+          <button
+            onClick={() => setIsDarkMode(!isDarkMode)}
+            className={`p-2 rounded-full transition-colors ${
+              isDarkMode
+                ? "bg-gray-700 text-white"
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            <i className={`fas fa-${isDarkMode ? "sun" : "moon"}`}></i>
+          </button>
+        </div>
+
+        <div className="px-6 mt-4">
+          <div
+            className={`text-2xl font-bold ${
+              isDarkMode ? "text-white" : "text-gray-700"
+            }`}
+          >
+            سلام 👋
+          </div>
+          <div
+            className={`text-sm mt-1 ${
+              isDarkMode ? "text-gray-300" : "text-gray-400"
+            }`}
+          >
+            {todayStr}
+          </div>
+        </div>
+
+        <div className="px-6 mt-4">
+          <FloatingInput
+            label="جستجو..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            icon="fas fa-search"
+            className={isDarkMode ? "bg-gray-700/50" : "bg-gray-50"}
+          />
+        </div>
+
+        <div className="flex items-center justify-between px-6 mt-6 mb-2">
+          {WEEKDAYS.map((d, i) => (
+            <div
+              key={i}
+              className={`w-8 h-8 flex items-center justify-center rounded-xl text-xs font-bold ${
+                i === 3
+                  ? "bg-indigo-400 text-white"
+                  : isDarkMode
+                  ? "text-gray-300"
+                  : "text-gray-400"
+              }`}
+            >
+              {d}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-4 px-6 mb-2 mt-2">
+          {LABELS.map((l, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <span
+                className="inline-block w-3 h-3 rounded-full"
+                style={{ background: l.color }}
+              ></span>
+              <span
+                className={`text-xs font-bold ${
+                  isDarkMode ? "text-gray-300" : "text-gray-400"
+                }`}
+              >
+                {l.name}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex-1 px-2 mt-2 overflow-y-auto pb-24">
+          <AnimatePresence initial={false}>
+            {filteredTasks.length === 0 ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 30 }}
+                className={`text-center mt-16 ${
+                  isDarkMode ? "text-gray-300" : "text-gray-400"
+                }`}
+              >
+                هیچ تسکی ثبت نشده 😴
+              </motion.div>
+            ) : (
+              filteredTasks.map((task) => (
+                <motion.div
+                  key={task.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.35 }}
+                  className={`flex items-center justify-between backdrop-blur-md rounded-xl px-4 py-3 mb-3 shadow-md border relative ${
+                    removingId === task.id
+                      ? "opacity-40 scale-95 pointer-events-none"
+                      : ""
+                  } ${
+                    isDarkMode
+                      ? "bg-gray-700/50 border-gray-600"
+                      : "bg-white/80 border-gray-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="inline-block w-3 h-3 rounded-full"
+                      style={{ background: task.label.color }}
+                    ></span>
+                    <div>
+                      <div
+                        className={`font-bold text-sm ${
+                          isDarkMode ? "text-white" : "text-gray-700"
+                        }`}
+                      >
+                        {task.title}
+                      </div>
+                      <div
+                        className={`text-xs mt-1 ${
+                          isDarkMode ? "text-gray-300" : "text-gray-400"
+                        }`}
+                      >
+                        {task.description}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`flex flex-col items-end gap-1 w-full`}>
+                    <div
+                      className={`flex items-center gap-3 px-2 py-1 rounded-2xl mb-1 shadow-md border border-gray-300/30 ${
+                        isDarkMode ? "bg-white/5" : "bg-white/70"
+                      }`}
+                      style={{ backdropFilter: "blur(10px)" }}
+                    >
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="p-2 rounded-full hover:bg-red-50 text-red-400 transition-all"
+                        title="حذف"
+                      >
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                      <button
+                        onClick={() => handleLike(task.id)}
+                        className={`p-2 rounded-full hover:bg-blue-50 transition-all ${
+                          task.isLiked
+                            ? "text-blue-500"
+                            : isDarkMode
+                            ? "text-gray-300"
+                            : "text-gray-400"
+                        }`}
+                        title="علاقه‌مندی"
+                      >
+                        <i className="fas fa-heart"></i>
+                      </button>
+                      <button
+                        className="p-2 rounded-full hover:bg-blue-50 text-blue-400 transition-all cursor-not-allowed"
+                        title="ویرایش"
+                        disabled
+                      >
+                        <i className="fas fa-edit"></i>
+                      </button>
+                    </div>
+                    <div
+                      className={`flex items-center justify-center gap-2 px-2 py-1 rounded-2xl shadow border border-gray-200/30 ${
+                        isDarkMode ? "bg-white/10" : "bg-white/90"
+                      }`}
+                      style={{ backdropFilter: "blur(8px)" }}
+                    >
+                      <motion.button
+                        whileHover={{
+                          scale: 1.12,
+                          boxShadow: "0 2px 8px #6366f1aa",
+                        }}
+                        className={demoBtnClass + " cursor-not-allowed"}
+                        title="یادآور"
+                        disabled
+                      >
+                        <i className={"fas fa-bell " + demoIconClass}></i>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{
+                          scale: 1.12,
+                          boxShadow: "0 2px 8px #6366f1aa",
+                        }}
+                        className={demoBtnClass + " cursor-not-allowed"}
+                        title="زیرتسک"
+                        disabled
+                      >
+                        <i className={"fas fa-list-ul " + demoIconClass}></i>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{
+                          scale: 1.12,
+                          boxShadow: "0 2px 8px #6366f1aa",
+                        }}
+                        className={demoBtnClass + " cursor-not-allowed"}
+                        title="پیوست فایل"
+                        disabled
+                      >
+                        <i className={"fas fa-paperclip " + demoIconClass}></i>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{
+                          scale: 1.12,
+                          boxShadow: "0 2px 8px #6366f1aa",
+                        }}
+                        className={demoBtnClass + " cursor-not-allowed"}
+                        title="تکرارشونده"
+                        disabled
+                      >
+                        <i className={"fas fa-redo " + demoIconClass}></i>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{
+                          scale: 1.12,
+                          boxShadow: "0 2px 8px #6366f1aa",
+                        }}
+                        className={demoBtnClass + " cursor-not-allowed"}
+                        title="کامنت/یادداشت"
+                        disabled
+                      >
+                        <i
+                          className={"fas fa-comment-dots " + demoIconClass}
+                        ></i>
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </AnimatePresence>
+        </div>
+
+        <motion.button
+          className="absolute left-1/2 -translate-x-1/2 bottom-4 w-14 h-14 rounded-full bg-indigo-400 shadow-lg flex items-center justify-center text-white text-3xl hover:bg-indigo-500 transition-all z-10"
+          onClick={() => setShowForm((v) => !v)}
+          title="افزودن تسک"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <motion.i
+            className="fas fa-plus"
+            animate={{ rotate: showForm ? 45 : 0 }}
+            transition={{ duration: 0.3 }}
+          ></motion.i>
+        </motion.button>
+
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.3 }}
+            className={`absolute left-1/2 -translate-x-1/2 bottom-24 w-[90%] backdrop-blur-xl rounded-2xl shadow-xl p-4 z-20 border ${
+              isDarkMode
+                ? "bg-gray-800/90 border-gray-700"
+                : "bg-white/95 border-gray-200"
+            }`}
+          >
+            <div className="mb-2">
               <FloatingInput
                 label="عنوان تسک"
                 value={newTask.title}
@@ -189,77 +482,84 @@ function App() {
                 }
                 required
                 icon="fas fa-heading"
+                className={isDarkMode ? "bg-gray-700/50" : "bg-gray-50"}
               />
-              <div className="mt-4">
-                <FloatingInput
-                  label="توضیحات"
-                  value={newTask.description}
-                  onChange={(e) =>
-                    setNewTask({ ...newTask, description: e.target.value })
-                  }
-                  required
-                  icon="fas fa-align-left"
-                />
-              </div>
-              <div className="mt-6 flex justify-end">
-                <AddTaskButton onClick={handleAddTask}>
-                  افزودن تسک
-                </AddTaskButton>
-              </div>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            {filteredTasks.length === 0 ? (
-              <div
-                className={`text-center py-12 rounded-xl ${
-                  theme === "dark" ? "bg-dark-lighter" : "bg-gray-50"
-                } animate-fade-in`}
+            <div className="mb-2">
+              <FloatingInput
+                label="توضیحات"
+                value={newTask.description}
+                onChange={(e) =>
+                  setNewTask({ ...newTask, description: e.target.value })
+                }
+                required
+                icon="fas fa-align-left"
+                className={isDarkMode ? "bg-gray-700/50" : "bg-gray-50"}
+              />
+            </div>
+            <div className="flex gap-2 mb-4 justify-center">
+              <motion.button
+                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
+                className={demoBtnClass + " cursor-not-allowed"}
+                title="یادآور"
+                disabled
               >
-                <i className="fas fa-clipboard-list text-6xl text-gray-600 mb-4"></i>
-                <p className="text-gray-400 text-xl">
-                  هیچ تسکی مطابق جست‌وجوی شما پیدا نشد 😴
-                </p>
-              </div>
-            ) : (
-              filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  title={task.title}
-                  description={task.description}
-                  isLiked={task.isLiked}
-                  onLike={() => handleLike(task.id)}
-                  onDelete={() => handleDelete(task.id)}
-                  onEdit={() => handleEdit(task.id)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      </main>
-
-      <footer
-        className={
-          theme === "dark"
-            ? "bg-dark-lighter py-4 mt-8"
-            : "bg-blue-100 py-4 mt-8"
-        }
-      >
-        <div className="max-w-4xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p className="animate-text">
-            ساخته شده توسط{" "}
-            <span
-              className={
-                theme === "dark"
-                  ? "text-primary font-semibold"
-                  : "text-blue-600 font-semibold"
-              }
-            >
-              mohamad majidian
-            </span>
-          </p>
-        </div>
-      </footer>
+                <i className={"fas fa-bell " + demoIconClass}></i>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
+                className={demoBtnClass + " cursor-not-allowed"}
+                title="زیرتسک"
+                disabled
+              >
+                <i className={"fas fa-list-ul " + demoIconClass}></i>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
+                className={demoBtnClass + " cursor-not-allowed"}
+                title="پیوست فایل"
+                disabled
+              >
+                <i className={"fas fa-paperclip " + demoIconClass}></i>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
+                className={demoBtnClass + " cursor-not-allowed"}
+                title="تکرارشونده"
+                disabled
+              >
+                <i className={"fas fa-redo " + demoIconClass}></i>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
+                className={demoBtnClass + " cursor-not-allowed"}
+                title="کامنت/یادداشت"
+                disabled
+              >
+                <i className={"fas fa-comment-dots " + demoIconClass}></i>
+              </motion.button>
+            </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                onClick={() => setShowForm(false)}
+                className={`px-4 py-2 rounded-lg font-bold transition-all ${
+                  isDarkMode
+                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}
+              >
+                انصراف
+              </button>
+              <button
+                onClick={handleAddTask}
+                className="px-4 py-2 rounded-lg bg-indigo-400 text-white font-bold hover:bg-indigo-500 transition-all"
+              >
+                افزودن
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }
