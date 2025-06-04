@@ -12,11 +12,22 @@ const LABELS = [
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
+const FILTER_OPTIONS = [
+  { id: "all", label: "همه تسک‌ها", icon: "fa-list" },
+  { id: "completed", label: "تکمیل شده", icon: "fa-check-circle" },
+  { id: "pending", label: "در انتظار", icon: "fa-clock" },
+];
+
 function App() {
   const [tasks, setTasks] = useState([]);
-  const [newTask, setNewTask] = useState({ title: "", description: "" });
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+  });
   const [search, setSearch] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [editingTask, setEditingTask] = useState(null);
   const today = new Date();
   const todayStr = today.toLocaleDateString("fa-IR", {
     weekday: "long",
@@ -25,18 +36,7 @@ function App() {
     day: "numeric",
   });
   const [showForm, setShowForm] = useState(false);
-  const [removingId, setRemovingId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const demoBtnClass = `rounded-2xl w-12 h-12 flex items-center justify-center shadow-lg backdrop-blur-md border border-gray-300/30 transition-all duration-200
-    ${
-      isDarkMode
-        ? "bg-white/10 hover:bg-indigo-400/20"
-        : "bg-white/80 hover:bg-indigo-100/80"
-    }`;
-  const demoIconClass = `${
-    isDarkMode ? "text-indigo-200" : "text-indigo-500"
-  } text-xl`;
 
   const handleAddTask = () => {
     if (newTask.title.trim() && newTask.description.trim()) {
@@ -44,6 +44,7 @@ function App() {
         ...newTask,
         id: Date.now(),
         isLiked: false,
+        isCompleted: false,
         label: LABELS[Math.floor(Math.random() * LABELS.length)],
       };
       setTasks([task, ...tasks]);
@@ -56,12 +57,8 @@ function App() {
   };
 
   const handleDelete = (taskId) => {
-    setRemovingId(taskId);
-    setTimeout(() => {
-      setTasks(tasks.filter((task) => task.id !== taskId));
-      setRemovingId(null);
-      toast.success("تسک با موفقیت حذف شد!", { duration: 2000 });
-    }, 350);
+    setTasks(tasks.filter((task) => task.id !== taskId));
+    toast.success("تسک با موفقیت حذف شد!", { duration: 2000 });
   };
 
   const handleLike = (taskId) => {
@@ -73,11 +70,38 @@ function App() {
     toast.success("وضعیت علاقه‌مندی تغییر کرد!", { duration: 2000 });
   };
 
+  const handleComplete = (taskId) => {
+    setTasks(
+      tasks.map((task) =>
+        task.id === taskId ? { ...task, isCompleted: !task.isCompleted } : task
+      )
+    );
+    toast.success("تسک انجام شد!", { duration: 2000 });
+  };
+
+  const handleEditClick = (task) => {
+    setEditingTask(task);
+  };
+
+  const handleEditTask = (editedTask) => {
+    setTasks(
+      tasks.map((task) => (task.id === editedTask.id ? editedTask : task))
+    );
+    setEditingTask(null);
+    toast.success("تسک با موفقیت ویرایش شد!", { duration: 2000 });
+  };
+
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch =
       task.title.toLowerCase().includes(search.toLowerCase()) ||
       task.description.toLowerCase().includes(search.toLowerCase());
-    return matchesSearch;
+
+    const matchesFilter =
+      activeFilter === "all" ||
+      (activeFilter === "completed" && task.isCompleted) ||
+      (activeFilter === "pending" && !task.isCompleted);
+
+    return matchesSearch && matchesFilter;
   });
 
   return (
@@ -288,6 +312,32 @@ function App() {
         </div>
 
         <div className="flex-1 px-2 mt-2 overflow-y-auto pb-24">
+          {/* Filter Buttons */}
+          <motion.div
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex justify-center gap-4 mb-4 px-4"
+          >
+            {FILTER_OPTIONS.map((option) => (
+              <motion.button
+                key={option.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveFilter(option.id)}
+                className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm transition-all duration-300 ${
+                  activeFilter === option.id
+                    ? "bg-indigo-500 text-white shadow-lg"
+                    : isDarkMode
+                    ? "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                    : "bg-white text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <i className={`fas ${option.icon}`}></i>
+                <span>{option.label}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+
           <AnimatePresence initial={false}>
             {filteredTasks.length === 0 ? (
               <motion.div
@@ -310,16 +360,28 @@ function App() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.35 }}
                   className={`flex items-center justify-between backdrop-blur-md rounded-xl px-4 py-3 mb-3 shadow-md border relative ${
-                    removingId === task.id
-                      ? "opacity-40 scale-95 pointer-events-none"
-                      : ""
+                    task.isCompleted ? "opacity-60" : ""
                   } ${
                     isDarkMode
                       ? "bg-gray-700/50 border-gray-600"
                       : "bg-white/80 border-gray-100"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleComplete(task.id)}
+                      className={`text-xl ${
+                        task.isCompleted ? "text-green-400" : "text-gray-400"
+                      }`}
+                    >
+                      <i
+                        className={`fas fa-${
+                          task.isCompleted ? "check-circle" : "circle"
+                        }`}
+                      ></i>
+                    </motion.button>
                     <span
                       className="inline-block w-3 h-3 rounded-full"
                       style={{ background: task.label.color }}
@@ -341,23 +403,36 @@ function App() {
                       </div>
                     </div>
                   </div>
-                  <div className={`flex flex-col items-end gap-1 w-full`}>
+                  <div className={`flex flex-col items-end gap-1`}>
                     <div
-                      className={`flex items-center gap-3 px-2 py-1 rounded-2xl mb-1 shadow-md border border-gray-300/30 ${
+                      className={`flex items-center gap-3 px-2 py-1 rounded-2xl shadow mb-1 border border-gray-300/30 ${
                         isDarkMode ? "bg-white/5" : "bg-white/70"
                       }`}
                       style={{ backdropFilter: "blur(10px)" }}
                     >
-                      <button
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleDelete(task.id)}
-                        className="p-2 rounded-full hover:bg-red-50 text-red-400 transition-all"
+                        className="p-1 rounded-full hover:bg-red-50 text-red-400 transition-all"
                         title="حذف"
                       >
                         <i className="fas fa-trash-alt"></i>
-                      </button>
-                      <button
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => handleEditClick(task)}
+                        className="p-1 rounded-full hover:bg-blue-50 text-blue-400 transition-all"
+                        title="ویرایش"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => handleLike(task.id)}
-                        className={`p-2 rounded-full hover:bg-blue-50 transition-all ${
+                        className={`p-1 rounded-full hover:bg-blue-50 transition-all ${
                           task.isLiked
                             ? "text-blue-500"
                             : isDarkMode
@@ -367,77 +442,6 @@ function App() {
                         title="علاقه‌مندی"
                       >
                         <i className="fas fa-heart"></i>
-                      </button>
-                      <button
-                        className="p-2 rounded-full hover:bg-blue-50 text-blue-400 transition-all cursor-not-allowed"
-                        title="ویرایش"
-                        disabled
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>
-                    </div>
-                    <div
-                      className={`flex items-center justify-center gap-2 px-2 py-1 rounded-2xl shadow border border-gray-200/30 ${
-                        isDarkMode ? "bg-white/10" : "bg-white/90"
-                      }`}
-                      style={{ backdropFilter: "blur(8px)" }}
-                    >
-                      <motion.button
-                        whileHover={{
-                          scale: 1.12,
-                          boxShadow: "0 2px 8px #6366f1aa",
-                        }}
-                        className={demoBtnClass + " cursor-not-allowed"}
-                        title="یادآور"
-                        disabled
-                      >
-                        <i className={"fas fa-bell " + demoIconClass}></i>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{
-                          scale: 1.12,
-                          boxShadow: "0 2px 8px #6366f1aa",
-                        }}
-                        className={demoBtnClass + " cursor-not-allowed"}
-                        title="زیرتسک"
-                        disabled
-                      >
-                        <i className={"fas fa-list-ul " + demoIconClass}></i>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{
-                          scale: 1.12,
-                          boxShadow: "0 2px 8px #6366f1aa",
-                        }}
-                        className={demoBtnClass + " cursor-not-allowed"}
-                        title="پیوست فایل"
-                        disabled
-                      >
-                        <i className={"fas fa-paperclip " + demoIconClass}></i>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{
-                          scale: 1.12,
-                          boxShadow: "0 2px 8px #6366f1aa",
-                        }}
-                        className={demoBtnClass + " cursor-not-allowed"}
-                        title="تکرارشونده"
-                        disabled
-                      >
-                        <i className={"fas fa-redo " + demoIconClass}></i>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{
-                          scale: 1.12,
-                          boxShadow: "0 2px 8px #6366f1aa",
-                        }}
-                        className={demoBtnClass + " cursor-not-allowed"}
-                        title="کامنت/یادداشت"
-                        disabled
-                      >
-                        <i
-                          className={"fas fa-comment-dots " + demoIconClass}
-                        ></i>
                       </motion.button>
                     </div>
                   </div>
@@ -446,6 +450,123 @@ function App() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Edit Task Modal */}
+        <AnimatePresence>
+          {editingTask && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className={`p-6 rounded-2xl shadow-2xl max-w-md w-full ${
+                  isDarkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h3 className="text-xl font-bold mb-4">ویرایش تسک</h3>
+                <FloatingInput
+                  value={editingTask.title}
+                  onChange={(e) =>
+                    setEditingTask({ ...editingTask, title: e.target.value })
+                  }
+                  label="عنوان"
+                />
+                <FloatingInput
+                  value={editingTask.description}
+                  onChange={(e) =>
+                    setEditingTask({
+                      ...editingTask,
+                      description: e.target.value,
+                    })
+                  }
+                  label="توضیحات"
+                />
+                <div className="flex justify-end gap-2 mt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setEditingTask(null)}
+                    className="px-4 py-2 rounded-lg bg-gray-500 text-white"
+                  >
+                    انصراف
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleEditTask(editingTask)}
+                    className="px-4 py-2 rounded-lg bg-indigo-500 text-white"
+                  >
+                    ذخیره
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Add Task Form */}
+        <AnimatePresence>
+          {showForm && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className={`fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50`}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className={`p-6 rounded-2xl shadow-2xl max-w-md w-full ${
+                  isDarkMode ? "bg-gray-800" : "bg-white"
+                }`}
+              >
+                <h3 className="text-xl font-bold mb-4">افزودن تسک جدید</h3>
+                <div className="mb-4">
+                  <FloatingInput
+                    value={newTask.title}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, title: e.target.value })
+                    }
+                    label="عنوان"
+                  />
+                </div>
+                <div className="mb-4">
+                  <FloatingInput
+                    value={newTask.description}
+                    onChange={(e) =>
+                      setNewTask({ ...newTask, description: e.target.value })
+                    }
+                    label="توضیحات"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowForm(false)}
+                    className="px-4 py-2 rounded-lg bg-gray-500 text-white"
+                  >
+                    انصراف
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleAddTask}
+                    className="px-4 py-2 rounded-lg bg-indigo-500 text-white"
+                  >
+                    افزودن
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <motion.button
           className="absolute left-1/2 -translate-x-1/2 bottom-4 w-14 h-14 rounded-full bg-indigo-400 shadow-lg flex items-center justify-center text-white text-3xl hover:bg-indigo-500 transition-all z-10"
@@ -460,105 +581,6 @@ function App() {
             transition={{ duration: 0.3 }}
           ></motion.i>
         </motion.button>
-
-        {showForm && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ duration: 0.3 }}
-            className={`absolute left-1/2 -translate-x-1/2 bottom-24 w-[90%] backdrop-blur-xl rounded-2xl shadow-xl p-4 z-20 border ${
-              isDarkMode
-                ? "bg-gray-800/90 border-gray-700"
-                : "bg-white/95 border-gray-200"
-            }`}
-          >
-            <div className="mb-2">
-              <FloatingInput
-                label="عنوان تسک"
-                value={newTask.title}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, title: e.target.value })
-                }
-                required
-                icon="fas fa-heading"
-                className={isDarkMode ? "bg-gray-700/50" : "bg-gray-50"}
-              />
-            </div>
-            <div className="mb-2">
-              <FloatingInput
-                label="توضیحات"
-                value={newTask.description}
-                onChange={(e) =>
-                  setNewTask({ ...newTask, description: e.target.value })
-                }
-                required
-                icon="fas fa-align-left"
-                className={isDarkMode ? "bg-gray-700/50" : "bg-gray-50"}
-              />
-            </div>
-            <div className="flex gap-2 mb-4 justify-center">
-              <motion.button
-                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
-                className={demoBtnClass + " cursor-not-allowed"}
-                title="یادآور"
-                disabled
-              >
-                <i className={"fas fa-bell " + demoIconClass}></i>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
-                className={demoBtnClass + " cursor-not-allowed"}
-                title="زیرتسک"
-                disabled
-              >
-                <i className={"fas fa-list-ul " + demoIconClass}></i>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
-                className={demoBtnClass + " cursor-not-allowed"}
-                title="پیوست فایل"
-                disabled
-              >
-                <i className={"fas fa-paperclip " + demoIconClass}></i>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
-                className={demoBtnClass + " cursor-not-allowed"}
-                title="تکرارشونده"
-                disabled
-              >
-                <i className={"fas fa-redo " + demoIconClass}></i>
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.1, boxShadow: "0 4px 16px #6366f1aa" }}
-                className={demoBtnClass + " cursor-not-allowed"}
-                title="کامنت/یادداشت"
-                disabled
-              >
-                <i className={"fas fa-comment-dots " + demoIconClass}></i>
-              </motion.button>
-            </div>
-            <div className="flex justify-end gap-2 mt-2">
-              <button
-                onClick={() => setShowForm(false)}
-                className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                  isDarkMode
-                    ? "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-                }`}
-              >
-                انصراف
-              </button>
-              <button
-                onClick={handleAddTask}
-                className="px-4 py-2 rounded-lg bg-indigo-400 text-white font-bold hover:bg-indigo-500 transition-all"
-              >
-                افزودن
-              </button>
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );
