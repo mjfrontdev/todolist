@@ -7,9 +7,10 @@ const FloatingInput = ({
   onChange,
   required = false,
   icon,
+  className = "",
 }) => {
   return (
-    <div className="input-group relative">
+    <div className={`input-group relative ${className}`}>
       <input
         type={type}
         value={value}
@@ -17,7 +18,7 @@ const FloatingInput = ({
         required={required}
         className="input"
       />
-      <i className={`input-icon ${icon}`}></i>
+      {icon && <i className={`input-icon ${icon}`}></i>}
       <label className="user-label">{label}</label>
     </div>
   );

@@ -2,11 +2,11 @@ import React from "react";
 
 const AddTaskButton = ({ onClick, children }) => (
   <button
-    className="cta flex items-center gap-2"
+    className="btn flex items-center gap-2 px-6 py-2"
     onClick={onClick}
     type="button"
   >
-    <span className="hover-underline-animation text-base font-bold text-inherit">
+    <span className="text-base font-bold text-inherit">
       {children}
     </span>
     <svg
